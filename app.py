@@ -5,102 +5,151 @@ from dotenv import load_dotenv
 from utils.data_loader import load_csv
 from utils.analyzer import analyze_data
 
-# -----------------------------
-# Load environment variables
-# -----------------------------
+# -------------------------------------------------
+# ENV
+# -------------------------------------------------
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# -----------------------------
-# Page configuration
-# -----------------------------
+# -------------------------------------------------
+# PAGE CONFIG
+# -------------------------------------------------
 st.set_page_config(
     page_title="AI Operations Analyst",
     page_icon="📊",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
-# -----------------------------
-# Global Styling (UI FIX)
-# -----------------------------
+# -------------------------------------------------
+# GLOBAL DARK THEME CSS
+# -------------------------------------------------
 st.markdown(
     """
     <style>
-    .main {
-        background-color: #0e1117;
+    /* App background */
+    .stApp {
+        background-color: #0b0f14;
+        color: #e5e7eb;
     }
+
+    /* Main container */
     .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
+        padding: 2rem 2.5rem;
     }
-    h1, h2, h3 {
-        color: #ffffff;
+
+    /* Headings */
+    h1, h2, h3, h4 {
+        color: #f9fafb;
+        font-weight: 600;
     }
+
+    /* Cards */
     .card {
-        background: #161b22;
-        padding: 20px;
-        border-radius: 14px;
+        background: #111827;
+        border: 1px solid #1f2937;
+        border-radius: 16px;
+        padding: 22px;
         margin-bottom: 20px;
-        border: 1px solid #30363d;
     }
+
+    /* Muted text */
     .muted {
-        color: #9ba3af;
+        color: #9ca3af;
         font-size: 14px;
+    }
+
+    /* Buttons */
+    .stButton > button {
+        background: linear-gradient(135deg, #6366f1, #4f46e5);
+        color: white;
+        border-radius: 12px;
+        padding: 0.6rem 1.2rem;
+        border: none;
+        font-weight: 600;
+    }
+
+    .stButton > button:hover {
+        background: linear-gradient(135deg, #4f46e5, #4338ca);
+        color: white;
+    }
+
+    /* File uploader */
+    section[data-testid="stFileUploader"] {
+        background: #0f172a;
+        border: 1px dashed #334155;
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    /* Selectbox */
+    div[data-baseweb="select"] > div {
+        background-color: #0f172a;
+        border-color: #334155;
+        color: #e5e7eb;
+    }
+
+    /* Dataframe */
+    .stDataFrame {
+        background-color: #0f172a;
+        border-radius: 12px;
+        border: 1px solid #1f2937;
+    }
+
+    /* Expander */
+    details {
+        background: #0f172a;
+        border-radius: 12px;
+        border: 1px solid #1f2937;
+        padding: 10px;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# -----------------------------
-# Header
-# -----------------------------
+# -------------------------------------------------
+# HEADER
+# -------------------------------------------------
 st.markdown(
     """
     <div class="card">
         <h1>📊 AI Operations Analyst</h1>
         <p class="muted">
-        Turn messy business data into clear profit decisions.
-        Built for founders, operators, and consultants.
+        AI-powered business analysis for founders, agencies, and operators.
+        Identify profit leaks, inefficiencies, and risks in minutes.
         </p>
     </div>
     """,
     unsafe_allow_html=True
 )
 
-# -----------------------------
-# Layout Columns
-# -----------------------------
-left, right = st.columns([1, 2])
+# -------------------------------------------------
+# LAYOUT
+# -------------------------------------------------
+left, right = st.columns([1, 2.3])
 
-# -----------------------------
-# LEFT SIDEBAR (INPUTS)
-# -----------------------------
+# -------------------------------------------------
+# LEFT PANEL – INPUTS
+# -------------------------------------------------
 with left:
     st.markdown(
         """
         <div class="card">
-            <h3>📂 Upload Data</h3>
-            <p class="muted">
-            Upload revenue, expense, or project CSV data.
-            </p>
+            <h3>📂 Upload Business Data</h3>
+            <p class="muted">Upload a CSV with revenue, expenses, hours, or projects.</p>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    uploaded_file = st.file_uploader(
-        "Upload CSV file",
-        type=["csv"]
-    )
+    uploaded_file = st.file_uploader("", type=["csv"])
 
     st.markdown(
         """
         <div class="card">
             <h3>🤖 AI Model</h3>
-            <p class="muted">
-            Choose any Gemini model (official names).
-            </p>
+            <p class="muted">Select any official Google Gemini model.</p>
         </div>
         """,
         unsafe_allow_html=True
@@ -116,7 +165,7 @@ with left:
     }
 
     selected_model_label = st.selectbox(
-        "Select Gemini Model",
+        "",
         list(MODEL_OPTIONS.keys())
     )
 
@@ -125,18 +174,16 @@ with left:
     st.markdown(
         f"""
         <div class="card">
-            <p class="muted">
-            Selected model:<br>
+            <p class="muted">Selected model</p>
             <b>{selected_model}</b>
-            </p>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-# -----------------------------
-# RIGHT SIDE (OUTPUT)
-# -----------------------------
+# -------------------------------------------------
+# RIGHT PANEL – OUTPUT
+# -------------------------------------------------
 with right:
     if uploaded_file:
         df = load_csv(uploaded_file)
@@ -154,11 +201,11 @@ with right:
             )
             st.dataframe(df.head(15), use_container_width=True)
 
-            if st.button("🧠 Analyze Business", use_container_width=True):
+            if st.button("🧠 Run AI Analysis", use_container_width=True):
                 if not GEMINI_API_KEY:
                     st.error("Gemini API key is missing.")
                 else:
-                    with st.spinner("Analyzing business performance..."):
+                    with st.spinner("Analyzing your business…"):
                         insights = analyze_data(
                             df=df,
                             api_key=GEMINI_API_KEY,
@@ -166,37 +213,19 @@ with right:
                         )
 
                     # -----------------------------
-                    # EXECUTIVE SUMMARY (NEW)
+                    # EXECUTIVE SUMMARY
                     # -----------------------------
                     st.markdown(
                         """
                         <div class="card">
                             <h2>🧠 Executive Summary</h2>
-                            <p class="muted">
-                            One-minute overview for decision makers
-                            </p>
+                            <p class="muted">Key findings you should act on immediately</p>
                         </div>
                         """,
                         unsafe_allow_html=True
                     )
 
-                    # Extract top bullets automatically
-                    summary_prompt = """
-                    From the analysis below, extract ONLY 5 bullets:
-                    - Each bullet must be one clear business insight
-                    - Focus on money, risk, or efficiency
-                    - No extra text
-
-                    Analysis:
-                    """
-
-                    summary_text = analyze_data(
-                        df=df,
-                        api_key=GEMINI_API_KEY,
-                        model_name=selected_model
-                    )
-
-                    st.markdown(summary_text)
+                    st.markdown(insights.split("##")[0])
 
                     # -----------------------------
                     # FULL INSIGHTS
