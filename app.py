@@ -1,12 +1,11 @@
 import streamlit as st
-import pandas as pd
 import os
 from dotenv import load_dotenv
 
 from utils.data_loader import load_csv
 from utils.analyzer import analyze_data
 
-# Load environment variables
+# Load env variables
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -29,25 +28,26 @@ The AI will:
 - Explain everything in plain English
 """)
 
+st.info("💡 Tip: Use the sample CSV from the GitHub repository to test the app.")
+
 uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
 
 if uploaded_file:
     df = load_csv(uploaded_file)
 
     if df is None:
-        st.error("Failed to read CSV file.")
+        st.error("Could not read the CSV file.")
     else:
-        st.success("File uploaded successfully")
+        st.success("CSV uploaded successfully")
 
-        with st.expander("🔍 Preview Data"):
-            st.dataframe(df.head(20))
+        st.dataframe(df.head(20))
 
         if st.button("🧠 Analyze My Business"):
             if not GEMINI_API_KEY:
-                st.error("Gemini API key missing.")
+                st.error("Gemini API key is missing.")
             else:
                 with st.spinner("Analyzing your business..."):
                     insights = analyze_data(df, GEMINI_API_KEY)
 
-                st.markdown("## 📌 Key Insights")
+                st.markdown("## 📌 Key Business Insights")
                 st.write(insights)
