@@ -4,14 +4,20 @@ import re
 from utils.prompts import SYSTEM_PROMPT
 
 def clean_text(text: str) -> str:
-    # Remove broken spacing between letters
-    text = re.sub(r'(?<=\w)\s+(?=\w)', ' ', text)
+    # Fix broken markdown asterisks
+    text = text.replace("∗∗", "**")
 
-    # Remove weird markdown artifacts
-    text = text.replace('∗∗', '**')
+    # Remove weird unicode spaces but KEEP newlines
+    text = re.sub(r"[ \t]+", " ", text)
 
-    # Remove double spaces
-    text = re.sub(r'\s{2,}', ' ', text)
+    # Ensure headings start on new lines
+    text = re.sub(r"(## )", r"\n\n## ", text)
+
+    # Ensure bullet points start on new lines
+    text = re.sub(r"(- )", r"\n- ", text)
+
+    # Clean excessive blank lines (max 2)
+    text = re.sub(r"\n{3,}", "\n\n", text)
 
     return text.strip()
 
@@ -26,14 +32,11 @@ def analyze_data(df: pd.DataFrame, api_key: str, model_name: str):
 {SYSTEM_PROMPT}
 
 Business data summary:
-
 {summary}
 
-Provide the analysis now.
+Now produce the analysis using the required structure.
 """
 
     response = model.generate_content(prompt)
 
-    cleaned_output = clean_text(response.text)
-
-    return cleaned_output
+    return clean_text(response.text)
