@@ -2,16 +2,14 @@ import google.generativeai as genai
 from utils.prompts import SYSTEM_PROMPT
 import pandas as pd
 
-def analyze_data(df: pd.DataFrame, api_key: str):
-    # Configure Gemini
+def analyze_data(df: pd.DataFrame, api_key: str, model_name: str):
+    # Configure Gemini API
     genai.configure(api_key=api_key)
 
-    # Gemini 3 Flash Preview model
-    model = genai.GenerativeModel(
-        model_name="models/gemini-3.0-flash-preview"
-    )
+    # Load selected model
+    model = genai.GenerativeModel(model_name=model_name)
 
-    # Summarize data for AI
+    # Summarize dataset for reasoning
     summary = df.describe(include="all").to_string()
 
     prompt = f"""
