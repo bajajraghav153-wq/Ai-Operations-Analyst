@@ -7,22 +7,22 @@ def analyze_data(df: pd.DataFrame, api_key: str):
 
     model = genai.GenerativeModel("gemini-1.5-flash")
 
-    data_summary = df.describe(include="all").to_string()
+    summary = df.describe(include="all").to_string()
 
-    user_prompt = f"""
-Here is business data summary:
+    prompt = f"""
+Here is a summary of business data:
 
-{data_summary}
+{summary}
 
 Tasks:
 1. Identify profit leaks
-2. Identify inefficiencies
-3. Highlight anomalies
-4. Give 5 specific actions to improve profit
+2. Identify inefficient clients or projects
+3. Highlight cost anomalies
+4. Suggest 5 clear actions to increase profit
 """
 
     response = model.generate_content(
-        SYSTEM_PROMPT + "\n\n" + user_prompt
+        SYSTEM_PROMPT + "\n\n" + prompt
     )
 
     return response.text
