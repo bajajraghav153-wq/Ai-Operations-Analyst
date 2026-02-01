@@ -21,90 +21,193 @@ st.set_page_config(
 )
 
 # -----------------------------
-# Header
+# Global Styling (UI FIX)
 # -----------------------------
-st.title("📊 AI Operations Analyst for SMBs")
-st.subheader("Turn business CSV data into clear profit insights")
-
 st.markdown(
     """
-Upload your business CSV file and select a **Google Gemini model**
-(exact names as listed in Google AI documentation).
-
-The AI will:
-- Identify profit leaks
-- Highlight inefficiencies
-- Detect anomalies
-- Provide clear, actionable recommendations
-"""
+    <style>
+    .main {
+        background-color: #0e1117;
+    }
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+    h1, h2, h3 {
+        color: #ffffff;
+    }
+    .card {
+        background: #161b22;
+        padding: 20px;
+        border-radius: 14px;
+        margin-bottom: 20px;
+        border: 1px solid #30363d;
+    }
+    .muted {
+        color: #9ba3af;
+        font-size: 14px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
 )
 
 # -----------------------------
-# OFFICIAL GEMINI MODELS (NO RENAMING)
+# Header
 # -----------------------------
-MODEL_OPTIONS = {
-    "gemini-3-pro-preview": "gemini-3-pro-preview",
-    "gemini-3-pro-image-preview": "gemini-3-pro-image-preview",
-    "gemini-3-flash-preview": "gemini-3-flash-preview",
-    "gemini-2.5-flash": "gemini-2.5-flash",
-    "gemini-2.5-flash-preview-09-2025": "gemini-2.5-flash-preview-09-2025",
-    "gemini-2.5-flash-preview-12-2025": "gemini-2.5-flash-preview-12-2025"
-}
-
-# -----------------------------
-# Model selector
-# -----------------------------
-selected_model_label = st.selectbox(
-    "🤖 Select Gemini Model (official names)",
-    list(MODEL_OPTIONS.keys())
+st.markdown(
+    """
+    <div class="card">
+        <h1>📊 AI Operations Analyst</h1>
+        <p class="muted">
+        Turn messy business data into clear profit decisions.
+        Built for founders, operators, and consultants.
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
-selected_model = MODEL_OPTIONS[selected_model_label]
-
-st.info(f"Selected model: `{selected_model}`")
+# -----------------------------
+# Layout Columns
+# -----------------------------
+left, right = st.columns([1, 2])
 
 # -----------------------------
-# CSV upload
+# LEFT SIDEBAR (INPUTS)
 # -----------------------------
-uploaded_file = st.file_uploader(
-    "Upload CSV file",
-    type=["csv"]
-)
+with left:
+    st.markdown(
+        """
+        <div class="card">
+            <h3>📂 Upload Data</h3>
+            <p class="muted">
+            Upload revenue, expense, or project CSV data.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-if uploaded_file:
-    df = load_csv(uploaded_file)
+    uploaded_file = st.file_uploader(
+        "Upload CSV file",
+        type=["csv"]
+    )
 
-    if df is None:
-        st.error("❌ Failed to read CSV file.")
-    else:
-        st.success("✅ CSV uploaded successfully")
+    st.markdown(
+        """
+        <div class="card">
+            <h3>🤖 AI Model</h3>
+            <p class="muted">
+            Choose any Gemini model (official names).
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-        with st.expander("🔍 Preview Uploaded Data"):
-            st.dataframe(df.head(20))
+    MODEL_OPTIONS = {
+        "gemini-3-pro-preview": "gemini-3-pro-preview",
+        "gemini-3-pro-image-preview": "gemini-3-pro-image-preview",
+        "gemini-3-flash-preview": "gemini-3-flash-preview",
+        "gemini-2.5-flash": "gemini-2.5-flash",
+        "gemini-2.5-flash-preview-09-2025": "gemini-2.5-flash-preview-09-2025",
+        "gemini-2.5-flash-preview-12-2025": "gemini-2.5-flash-preview-12-2025"
+    }
 
-        # -----------------------------
-        # Run analysis
-        # -----------------------------
-        if st.button("🧠 Analyze Business"):
-            if not GEMINI_API_KEY:
-                st.error("❌ Gemini API key is missing.")
-            else:
-                with st.spinner("Analyzing business data..."):
-                    try:
+    selected_model_label = st.selectbox(
+        "Select Gemini Model",
+        list(MODEL_OPTIONS.keys())
+    )
+
+    selected_model = MODEL_OPTIONS[selected_model_label]
+
+    st.markdown(
+        f"""
+        <div class="card">
+            <p class="muted">
+            Selected model:<br>
+            <b>{selected_model}</b>
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+# -----------------------------
+# RIGHT SIDE (OUTPUT)
+# -----------------------------
+with right:
+    if uploaded_file:
+        df = load_csv(uploaded_file)
+
+        if df is None:
+            st.error("Failed to read CSV file.")
+        else:
+            st.markdown(
+                """
+                <div class="card">
+                    <h3>🔍 Data Preview</h3>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            st.dataframe(df.head(15), use_container_width=True)
+
+            if st.button("🧠 Analyze Business", use_container_width=True):
+                if not GEMINI_API_KEY:
+                    st.error("Gemini API key is missing.")
+                else:
+                    with st.spinner("Analyzing business performance..."):
                         insights = analyze_data(
                             df=df,
                             api_key=GEMINI_API_KEY,
                             model_name=selected_model
                         )
 
-                        st.markdown("## 📌 Insights")
+                    # -----------------------------
+                    # EXECUTIVE SUMMARY (NEW)
+                    # -----------------------------
+                    st.markdown(
+                        """
+                        <div class="card">
+                            <h2>🧠 Executive Summary</h2>
+                            <p class="muted">
+                            One-minute overview for decision makers
+                            </p>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
 
-                        # IMPORTANT:
-                        # markdown rendering preserves headings & spacing
-                        st.markdown(insights, unsafe_allow_html=False)
+                    # Extract top bullets automatically
+                    summary_prompt = """
+                    From the analysis below, extract ONLY 5 bullets:
+                    - Each bullet must be one clear business insight
+                    - Focus on money, risk, or efficiency
+                    - No extra text
 
-                    except Exception:
-                        st.error(
-                            "❌ Analysis failed. "
-                            "This model may not be enabled for your API key or region."
-                        )
+                    Analysis:
+                    """
+
+                    summary_text = analyze_data(
+                        df=df,
+                        api_key=GEMINI_API_KEY,
+                        model_name=selected_model
+                    )
+
+                    st.markdown(summary_text)
+
+                    # -----------------------------
+                    # FULL INSIGHTS
+                    # -----------------------------
+                    st.markdown(
+                        """
+                        <div class="card">
+                            <h2>📌 Detailed Insights</h2>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+                    st.markdown(insights)
