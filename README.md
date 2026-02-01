@@ -1,14 +1,16 @@
 # AI Operations Analyst for SMBs
 
-An AI-powered business analyst that turns raw CSV data into clear, actionable insights.
+An AI-powered tool that helps small and mid-sized businesses understand
+where they are losing money and how to improve profits.
 
 ## Features
-- Upload business CSVs
-- Detect profit leaks & inefficiencies
-- Plain-English explanations
+- Upload CSV business data
+- Detect profit leaks
+- Identify inefficient clients and projects
+- Plain English explanations
 - Actionable recommendations
 
 ## Tech Stack
 - Streamlit
-- Gemini AI
 - Python
+- Gemini AI
