@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from utils.data_loader import load_csv
 from utils.analyzer import analyze_data
 
-# Load env variables
+# Load environment variables
 load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -20,15 +20,29 @@ st.title("📊 AI Operations Analyst for SMBs")
 st.subheader("Turn messy business data into clear profit insights")
 
 st.markdown("""
-Upload your business data (revenue, expenses, time tracking, clients).
+Upload your business data and choose the AI model you want.
 
-The AI will:
-- Find profit leaks
-- Detect inefficiencies
-- Explain everything in plain English
+Different models give different trade-offs:
+- Speed
+- Cost
+- Depth of analysis
 """)
 
-st.info("💡 Tip: Use the sample CSV from the GitHub repository to test the app.")
+# 🔹 MODEL SELECTION (YOU CONTROL THIS LIST)
+MODEL_OPTIONS = {
+    "Gemini 3 Flash (Fast & Cheap)": "models/gemini-3.0-flash-preview",
+    "Gemini 1.5 Flash (Balanced)": "models/gemini-1.5-flash",
+    "Gemini 1.5 Pro (Deep Analysis)": "models/gemini-1.5-pro"
+}
+
+selected_model_label = st.selectbox(
+    "🤖 Select AI Model",
+    list(MODEL_OPTIONS.keys())
+)
+
+selected_model = MODEL_OPTIONS[selected_model_label]
+
+st.info(f"Selected model: `{selected_model}`")
 
 uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
 
@@ -39,7 +53,6 @@ if uploaded_file:
         st.error("Could not read the CSV file.")
     else:
         st.success("CSV uploaded successfully")
-
         st.dataframe(df.head(20))
 
         if st.button("🧠 Analyze My Business"):
@@ -47,7 +60,11 @@ if uploaded_file:
                 st.error("Gemini API key is missing.")
             else:
                 with st.spinner("Analyzing your business..."):
-                    insights = analyze_data(df, GEMINI_API_KEY)
+                    insights = analyze_data(
+                        df=df,
+                        api_key=GEMINI_API_KEY,
+                        model_name=selected_model
+                    )
 
                 st.markdown("## 📌 Key Business Insights")
                 st.write(insights)
