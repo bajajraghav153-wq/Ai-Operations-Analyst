@@ -1,33 +1,39 @@
 import google.generativeai as genai
-from utils.prompts import SYSTEM_PROMPT
 import pandas as pd
+import re
+from utils.prompts import SYSTEM_PROMPT
+
+def clean_text(text: str) -> str:
+    # Remove broken spacing between letters
+    text = re.sub(r'(?<=\w)\s+(?=\w)', ' ', text)
+
+    # Remove weird markdown artifacts
+    text = text.replace('∗∗', '**')
+
+    # Remove double spaces
+    text = re.sub(r'\s{2,}', ' ', text)
+
+    return text.strip()
 
 def analyze_data(df: pd.DataFrame, api_key: str, model_name: str):
-    # Configure Gemini API
     genai.configure(api_key=api_key)
 
-    # Load selected model
-    model = genai.GenerativeModel(model_name=model_name)
+    model = genai.GenerativeModel(model_name)
 
-    # Summarize dataset for reasoning
     summary = df.describe(include="all").to_string()
 
     prompt = f"""
-Here is a summary of business data:
+{SYSTEM_PROMPT}
+
+Business data summary:
 
 {summary}
 
-Tasks:
-1. Identify profit leaks
-2. Identify inefficient clients or projects
-3. Detect unusual costs or anomalies
-4. Suggest 5 very specific actions to improve profitability
-
-Explain everything in simple business language.
+Provide the analysis now.
 """
 
-    response = model.generate_content(
-        SYSTEM_PROMPT + "\n\n" + prompt
-    )
+    response = model.generate_content(prompt)
 
-    return response.text
+    cleaned_output = clean_text(response.text)
+
+    return cleaned_output
