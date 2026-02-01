@@ -9,6 +9,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.colors import HexColor
+from reportlab.lib.units import inch
 
 from utils.data_loader import load_csv
 from utils.analyzer import analyze_data
@@ -30,20 +31,25 @@ st.set_page_config(
 )
 
 # -------------------------------------------------
-# DARK THEME
+# DARK SAAS THEME
 # -------------------------------------------------
 st.markdown(
     """
     <style>
     .stApp { background-color: #0b0f14; color: #e5e7eb; }
+    .block-container { padding: 1.8rem 2.5rem; }
+    h1, h2, h3 { color: #f9fafb; font-weight: 600; }
+
     .card {
-        background: #111827;
+        background: linear-gradient(180deg, #111827, #0f172a);
         border: 1px solid #1f2937;
         border-radius: 16px;
         padding: 20px;
         margin-bottom: 16px;
     }
+
     .muted { color: #9ca3af; font-size: 14px; }
+
     .stButton > button {
         width: 100%;
         background: linear-gradient(135deg, #6366f1, #4f46e5);
@@ -53,74 +59,133 @@ st.markdown(
         font-weight: 600;
         border: none;
     }
+
+    section[data-testid="stFileUploader"] {
+        background: #0f172a;
+        border: 1px dashed #334155;
+        padding: 14px;
+        border-radius: 12px;
+    }
+
+    .stDataFrame {
+        background-color: #0f172a;
+        border-radius: 14px;
+        border: 1px solid #1f2937;
+    }
+
+    .stDataFrame thead tr th {
+        background-color: #020617 !important;
+        color: #c7d2fe !important;
+    }
     </style>
     """,
     unsafe_allow_html=True
 )
 
 # -------------------------------------------------
-# PDF HELPERS
+# PDF GENERATION (CONSULTANT GRADE)
 # -------------------------------------------------
-def clean_for_pdf(text: str) -> str:
-    """Remove markdown artifacts for PDF"""
-    text = re.sub(r"##+", "", text)
-    text = re.sub(r"\*\*", "", text)
-    return text.strip()
-
 def generate_pdf(exec_summary, detailed_analysis, metrics_df):
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=36, leftMargin=36)
+
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=40,
+        leftMargin=40,
+        topMargin=48,
+        bottomMargin=40
+    )
+
     styles = getSampleStyleSheet()
 
     title_style = ParagraphStyle(
         "TitleStyle",
-        parent=styles["Title"],
-        textColor=HexColor("#111827")
+        fontSize=22,
+        leading=26,
+        textColor=HexColor("#1F3A5F"),
+        alignment=1,
+        spaceAfter=20
     )
 
-    heading_style = ParagraphStyle(
-        "HeadingStyle",
-        parent=styles["Heading2"],
-        spaceBefore=14,
-        spaceAfter=6
+    section_style = ParagraphStyle(
+        "SectionStyle",
+        fontSize=15,
+        leading=18,
+        textColor=HexColor("#1F3A5F"),
+        spaceBefore=18,
+        spaceAfter=10
     )
 
     body_style = ParagraphStyle(
         "BodyStyle",
-        parent=styles["BodyText"],
+        fontSize=10.5,
+        leading=15,
+        textColor=HexColor("#111827"),
         spaceAfter=6
+    )
+
+    bullet_style = ParagraphStyle(
+        "BulletStyle",
+        fontSize=10.5,
+        leading=15,
+        textColor=HexColor("#111827"),
+        leftIndent=14,
+        bulletIndent=6,
+        spaceAfter=6
+    )
+
+    muted_style = ParagraphStyle(
+        "MutedStyle",
+        fontSize=9,
+        textColor=HexColor("#4B5563"),
+        spaceAfter=10
     )
 
     elements = []
 
     elements.append(Paragraph("AI Operations Analysis Report", title_style))
-    elements.append(Spacer(1, 16))
+    elements.append(Paragraph(
+        "Prepared by an AI Operations Analyst<br/>Confidential – Internal Use Only",
+        muted_style
+    ))
+    elements.append(Spacer(1, 0.3 * inch))
 
-    elements.append(Paragraph("Executive Summary", heading_style))
+    elements.append(Paragraph("Executive Summary", section_style))
     for line in exec_summary.split("\n"):
         if line.strip():
-            elements.append(Paragraph(line, body_style))
+            elements.append(Paragraph(f"• {line.replace('-', '').strip()}", bullet_style))
 
-    elements.append(Spacer(1, 16))
-    elements.append(Paragraph("Key Metrics", heading_style))
+    elements.append(Spacer(1, 0.3 * inch))
+    elements.append(Paragraph("Key Financial Metrics", section_style))
 
     table_data = [metrics_df.columns.tolist()] + metrics_df.round(2).values.tolist()
-    table = Table(table_data, hAlign="LEFT")
+    table = Table(table_data, hAlign="LEFT", colWidths=[90, 70, 70, 70, 60])
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), HexColor("#E5E7EB")),
-        ("GRID", (0, 0), (-1, -1), 0.5, HexColor("#9CA3AF")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), HexColor("#1F3A5F")),
+        ("GRID", (0, 0), (-1, -1), 0.5, HexColor("#CBD5E1")),
         ("FONT", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("ALIGN", (1, 1), (-1, -1), "RIGHT"),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
     ]))
     elements.append(table)
 
-    elements.append(Spacer(1, 16))
-    elements.append(Paragraph("Detailed Analysis", heading_style))
+    elements.append(Spacer(1, 0.3 * inch))
+    elements.append(Paragraph("Detailed Analysis & Recommendations", section_style))
 
-    for line in clean_for_pdf(detailed_analysis).split("\n"):
-        if line.strip():
-            elements.append(Paragraph(line, body_style))
+    for line in detailed_analysis.split("\n"):
+        clean = re.sub(r"[#*]", "", line).strip()
+        if clean:
+            elements.append(Paragraph(clean, body_style))
+
+    elements.append(Spacer(1, 0.4 * inch))
+    elements.append(Paragraph(
+        "This report is a decision-support document and should be interpreted "
+        "with professional judgment.",
+        muted_style
+    ))
 
     doc.build(elements)
     buffer.seek(0)
@@ -133,7 +198,9 @@ st.markdown(
     """
     <div class="card">
         <h1>📊 AI Operations Analyst</h1>
-        <p class="muted">Consultant-grade business insights with visuals & reports</p>
+        <p class="muted">
+        Consultant-grade business analysis with AI, visuals, and reports.
+        </p>
     </div>
     """,
     unsafe_allow_html=True
@@ -145,7 +212,7 @@ st.markdown(
 left, right = st.columns([1, 2.4])
 
 # -------------------------------------------------
-# LEFT PANEL
+# LEFT: CONTROL PANEL
 # -------------------------------------------------
 with left:
     st.markdown("<div class='card'><h3>⚙️ Control Panel</h3>", unsafe_allow_html=True)
@@ -156,13 +223,15 @@ with left:
         "gemini-3-flash-preview": "gemini-3-flash-preview",
         "gemini-2.5-flash": "gemini-2.5-flash",
     }
+
     selected_model = MODEL_OPTIONS[
         st.selectbox("Gemini Model", MODEL_OPTIONS.keys())
     ]
+
     st.markdown(f"<p class='muted'>Model: <b>{selected_model}</b></p></div>", unsafe_allow_html=True)
 
 # -------------------------------------------------
-# RIGHT PANEL
+# RIGHT: OUTPUT
 # -------------------------------------------------
 with right:
     if uploaded_file:
@@ -177,29 +246,22 @@ with right:
             st.dataframe(df, use_container_width=True)
 
             if st.button("🚀 Run AI Analysis"):
-                with st.spinner("Analyzing…"):
+                with st.spinner("Analyzing business performance…"):
                     detailed_analysis = analyze_data(df, GEMINI_API_KEY, selected_model)
 
                     summary_prompt = f"""
-Extract EXACTLY 5 bullet points for an executive summary.
-Only bullets. Focus on profit, risk, efficiency.
+Extract EXACTLY 5 bullet points.
+Focus on profit, cost, efficiency, and risk.
 
 Analysis:
 {detailed_analysis}
 """
-                    exec_summary = analyze_data(df, GEMINI_API_KEY, selected_model)
+                    executive_summary = analyze_data(df, GEMINI_API_KEY, selected_model)
 
-                # -----------------------------
-                # EXEC SUMMARY
-                # -----------------------------
                 st.markdown("<div class='card'><h2>🧠 Executive Summary</h2></div>", unsafe_allow_html=True)
-                st.markdown(exec_summary)
+                st.markdown(executive_summary)
 
-                # -----------------------------
-                # VISUAL CHARTS (RESTORED)
-                # -----------------------------
                 st.markdown("<div class='card'><h2>📊 Visual Insights</h2></div>", unsafe_allow_html=True)
-
                 c1, c2 = st.columns(2)
                 with c1:
                     st.subheader("Profit by Client")
@@ -207,21 +269,14 @@ Analysis:
                 with c2:
                     st.subheader("Hours vs Revenue")
                     st.scatter_chart(df[["hours_worked", "revenue"]])
-
                 st.subheader("Expenses vs Revenue")
                 st.scatter_chart(df[["expenses", "revenue"]])
 
-                # -----------------------------
-                # DETAILED ANALYSIS
-                # -----------------------------
                 st.markdown("<div class='card'><h2>📌 Detailed Analysis</h2></div>", unsafe_allow_html=True)
                 st.markdown(detailed_analysis)
 
-                # -----------------------------
-                # PDF EXPORT (FIXED)
-                # -----------------------------
                 metrics = df[["client", "revenue", "expenses", "profit", "margin"]]
-                pdf = generate_pdf(exec_summary, detailed_analysis, metrics)
+                pdf = generate_pdf(executive_summary, detailed_analysis, metrics)
 
                 st.download_button(
                     "⬇️ Download Consultant PDF",
