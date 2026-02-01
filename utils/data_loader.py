@@ -5,5 +5,5 @@ def load_csv(file):
         df = pd.read_csv(file)
         df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
         return df
-    except Exception as e:
+    except Exception:
         return None
