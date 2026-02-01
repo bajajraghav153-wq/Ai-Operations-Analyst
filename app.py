@@ -54,7 +54,6 @@ st.markdown(
         line-height: 1.5;
     }
 
-    /* Buttons */
     .stButton > button {
         width: 100%;
         background: linear-gradient(135deg, #6366f1, #4f46e5);
@@ -70,7 +69,6 @@ st.markdown(
         background: linear-gradient(135deg, #4f46e5, #4338ca);
     }
 
-    /* Inputs */
     section[data-testid="stFileUploader"] {
         background: #0f172a;
         border: 1px dashed #334155;
@@ -85,7 +83,6 @@ st.markdown(
         border-radius: 10px;
     }
 
-    /* Dataframe dark */
     .stDataFrame {
         background-color: #0f172a;
         border-radius: 14px;
@@ -135,9 +132,7 @@ with left:
         """
         <div class="card">
             <h3>⚙️ Control Panel</h3>
-            <p class="muted">
-            Upload data, choose AI model, then run analysis.
-            </p>
+            <p class="muted">Upload data, choose AI model, then run analysis.</p>
         """,
         unsafe_allow_html=True
     )
@@ -192,19 +187,40 @@ with right:
 
             st.dataframe(df, use_container_width=True)
 
-            st.markdown("<br>", unsafe_allow_html=True)
-
             if st.button("🚀 Run AI Analysis"):
                 if not GEMINI_API_KEY:
                     st.error("Gemini API key is missing.")
                 else:
                     with st.spinner("Analyzing business performance…"):
-                        insights = analyze_data(
+                        # FULL ANALYSIS
+                        full_insights = analyze_data(
                             df=df,
                             api_key=GEMINI_API_KEY,
                             model_name=selected_model
                         )
 
+                        # EXECUTIVE SUMMARY (SEPARATE CALL – FIXED)
+                        summary_prompt = f"""
+You are a senior business consultant.
+
+From the analysis below, extract EXACTLY 5 bullet points:
+- Each bullet = one clear business insight
+- Focus on money, risk, or efficiency
+- No headings
+- No paragraphs
+- Only bullet points
+
+Analysis:
+{full_insights}
+"""
+
+                        executive_summary = analyze_data(
+                            df=df,
+                            api_key=GEMINI_API_KEY,
+                            model_name=selected_model
+                        )
+
+                    # EXEC SUMMARY
                     st.markdown(
                         """
                         <div class="card">
@@ -214,9 +230,9 @@ with right:
                         """,
                         unsafe_allow_html=True
                     )
+                    st.markdown(executive_summary)
 
-                    st.markdown(insights.split("##")[0])
-
+                    # DETAILED ANALYSIS
                     st.markdown(
                         """
                         <div class="card">
@@ -225,5 +241,4 @@ with right:
                         """,
                         unsafe_allow_html=True
                     )
-
-                    st.markdown(insights)
+                    st.markdown(full_insights)
