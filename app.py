@@ -1,7 +1,6 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
-
 from utils.data_loader import load_csv
 from utils.analyzer import analyze_data
 
@@ -22,86 +21,85 @@ st.set_page_config(
 )
 
 # -------------------------------------------------
-# GLOBAL DARK THEME CSS
+# GLOBAL DARK SAAS THEME
 # -------------------------------------------------
 st.markdown(
     """
     <style>
-    /* App background */
     .stApp {
         background-color: #0b0f14;
         color: #e5e7eb;
     }
 
-    /* Main container */
     .block-container {
-        padding: 2rem 2.5rem;
+        padding: 1.8rem 2.5rem 2rem;
     }
 
-    /* Headings */
-    h1, h2, h3, h4 {
+    h1, h2, h3 {
         color: #f9fafb;
         font-weight: 600;
     }
 
-    /* Cards */
     .card {
-        background: #111827;
+        background: linear-gradient(180deg, #111827, #0f172a);
         border: 1px solid #1f2937;
         border-radius: 16px;
-        padding: 22px;
-        margin-bottom: 20px;
+        padding: 20px;
+        margin-bottom: 16px;
     }
 
-    /* Muted text */
     .muted {
         color: #9ca3af;
         font-size: 14px;
+        line-height: 1.5;
     }
 
     /* Buttons */
     .stButton > button {
+        width: 100%;
         background: linear-gradient(135deg, #6366f1, #4f46e5);
         color: white;
-        border-radius: 12px;
-        padding: 0.6rem 1.2rem;
+        border-radius: 14px;
+        padding: 0.7rem 1.2rem;
         border: none;
         font-weight: 600;
+        font-size: 15px;
     }
 
     .stButton > button:hover {
         background: linear-gradient(135deg, #4f46e5, #4338ca);
-        color: white;
     }
 
-    /* File uploader */
+    /* Inputs */
     section[data-testid="stFileUploader"] {
         background: #0f172a;
         border: 1px dashed #334155;
-        padding: 16px;
+        padding: 14px;
         border-radius: 12px;
     }
 
-    /* Selectbox */
     div[data-baseweb="select"] > div {
         background-color: #0f172a;
         border-color: #334155;
         color: #e5e7eb;
+        border-radius: 10px;
     }
 
-    /* Dataframe */
+    /* Dataframe dark */
     .stDataFrame {
         background-color: #0f172a;
-        border-radius: 12px;
+        border-radius: 14px;
         border: 1px solid #1f2937;
     }
 
-    /* Expander */
-    details {
-        background: #0f172a;
-        border-radius: 12px;
-        border: 1px solid #1f2937;
-        padding: 10px;
+    .stDataFrame table {
+        background-color: #0f172a;
+        color: #e5e7eb;
+    }
+
+    .stDataFrame thead tr th {
+        background-color: #020617 !important;
+        color: #c7d2fe !important;
     }
     </style>
     """,
@@ -109,15 +107,15 @@ st.markdown(
 )
 
 # -------------------------------------------------
-# HEADER
+# HERO HEADER
 # -------------------------------------------------
 st.markdown(
     """
     <div class="card">
         <h1>📊 AI Operations Analyst</h1>
         <p class="muted">
-        AI-powered business analysis for founders, agencies, and operators.
-        Identify profit leaks, inefficiencies, and risks in minutes.
+        AI-powered operational intelligence for founders, agencies, and SMB operators.
+        Upload your data and get consultant-level insights in minutes.
         </p>
     </div>
     """,
@@ -127,33 +125,24 @@ st.markdown(
 # -------------------------------------------------
 # LAYOUT
 # -------------------------------------------------
-left, right = st.columns([1, 2.3])
+left, right = st.columns([1, 2.4])
 
 # -------------------------------------------------
-# LEFT PANEL – INPUTS
+# LEFT: CONTROL PANEL
 # -------------------------------------------------
 with left:
     st.markdown(
         """
         <div class="card">
-            <h3>📂 Upload Business Data</h3>
-            <p class="muted">Upload a CSV with revenue, expenses, hours, or projects.</p>
-        </div>
+            <h3>⚙️ Control Panel</h3>
+            <p class="muted">
+            Upload data, choose AI model, then run analysis.
+            </p>
         """,
         unsafe_allow_html=True
     )
 
-    uploaded_file = st.file_uploader("", type=["csv"])
-
-    st.markdown(
-        """
-        <div class="card">
-            <h3>🤖 AI Model</h3>
-            <p class="muted">Select any official Google Gemini model.</p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
 
     MODEL_OPTIONS = {
         "gemini-3-pro-preview": "gemini-3-pro-preview",
@@ -165,7 +154,7 @@ with left:
     }
 
     selected_model_label = st.selectbox(
-        "",
+        "Gemini Model",
         list(MODEL_OPTIONS.keys())
     )
 
@@ -173,16 +162,17 @@ with left:
 
     st.markdown(
         f"""
-        <div class="card">
-            <p class="muted">Selected model</p>
-            <b>{selected_model}</b>
+        <p class="muted">
+        Selected model:<br>
+        <b>{selected_model}</b>
+        </p>
         </div>
         """,
         unsafe_allow_html=True
     )
 
 # -------------------------------------------------
-# RIGHT PANEL – OUTPUT
+# RIGHT: OUTPUT
 # -------------------------------------------------
 with right:
     if uploaded_file:
@@ -194,32 +184,32 @@ with right:
             st.markdown(
                 """
                 <div class="card">
-                    <h3>🔍 Data Preview</h3>
+                    <h3>📄 Data Preview</h3>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
-            st.dataframe(df.head(15), use_container_width=True)
 
-            if st.button("🧠 Run AI Analysis", use_container_width=True):
+            st.dataframe(df, use_container_width=True)
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            if st.button("🚀 Run AI Analysis"):
                 if not GEMINI_API_KEY:
                     st.error("Gemini API key is missing.")
                 else:
-                    with st.spinner("Analyzing your business…"):
+                    with st.spinner("Analyzing business performance…"):
                         insights = analyze_data(
                             df=df,
                             api_key=GEMINI_API_KEY,
                             model_name=selected_model
                         )
 
-                    # -----------------------------
-                    # EXECUTIVE SUMMARY
-                    # -----------------------------
                     st.markdown(
                         """
                         <div class="card">
                             <h2>🧠 Executive Summary</h2>
-                            <p class="muted">Key findings you should act on immediately</p>
+                            <p class="muted">Key insights you should act on immediately</p>
                         </div>
                         """,
                         unsafe_allow_html=True
@@ -227,13 +217,10 @@ with right:
 
                     st.markdown(insights.split("##")[0])
 
-                    # -----------------------------
-                    # FULL INSIGHTS
-                    # -----------------------------
                     st.markdown(
                         """
                         <div class="card">
-                            <h2>📌 Detailed Insights</h2>
+                            <h2>📌 Detailed Analysis</h2>
                         </div>
                         """,
                         unsafe_allow_html=True
