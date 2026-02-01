@@ -1,6 +1,8 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
+import pandas as pd
+
 from utils.data_loader import load_csv
 from utils.analyzer import analyze_data
 
@@ -51,7 +53,6 @@ st.markdown(
     .muted {
         color: #9ca3af;
         font-size: 14px;
-        line-height: 1.5;
     }
 
     .stButton > button {
@@ -65,38 +66,11 @@ st.markdown(
         font-size: 15px;
     }
 
-    .stButton > button:hover {
-        background: linear-gradient(135deg, #4f46e5, #4338ca);
-    }
-
     section[data-testid="stFileUploader"] {
         background: #0f172a;
         border: 1px dashed #334155;
         padding: 14px;
         border-radius: 12px;
-    }
-
-    div[data-baseweb="select"] > div {
-        background-color: #0f172a;
-        border-color: #334155;
-        color: #e5e7eb;
-        border-radius: 10px;
-    }
-
-    .stDataFrame {
-        background-color: #0f172a;
-        border-radius: 14px;
-        border: 1px solid #1f2937;
-    }
-
-    .stDataFrame table {
-        background-color: #0f172a;
-        color: #e5e7eb;
-    }
-
-    .stDataFrame thead tr th {
-        background-color: #020617 !important;
-        color: #c7d2fe !important;
     }
     </style>
     """,
@@ -104,15 +78,14 @@ st.markdown(
 )
 
 # -------------------------------------------------
-# HERO HEADER
+# HEADER
 # -------------------------------------------------
 st.markdown(
     """
     <div class="card">
         <h1>📊 AI Operations Analyst</h1>
         <p class="muted">
-        AI-powered operational intelligence for founders, agencies, and SMB operators.
-        Upload your data and get consultant-level insights in minutes.
+        Consultant-grade business insights with AI + visuals.
         </p>
     </div>
     """,
@@ -132,7 +105,7 @@ with left:
         """
         <div class="card">
             <h3>⚙️ Control Panel</h3>
-            <p class="muted">Upload data, choose AI model, then run analysis.</p>
+            <p class="muted">Upload data and select model</p>
         """,
         unsafe_allow_html=True
     )
@@ -148,11 +121,7 @@ with left:
         "gemini-2.5-flash-preview-12-2025": "gemini-2.5-flash-preview-12-2025"
     }
 
-    selected_model_label = st.selectbox(
-        "Gemini Model",
-        list(MODEL_OPTIONS.keys())
-    )
-
+    selected_model_label = st.selectbox("Gemini Model", list(MODEL_OPTIONS.keys()))
     selected_model = MODEL_OPTIONS[selected_model_label]
 
     st.markdown(
@@ -174,8 +143,14 @@ with right:
         df = load_csv(uploaded_file)
 
         if df is None:
-            st.error("Failed to read CSV file.")
+            st.error("Failed to read CSV.")
         else:
+            # -----------------------------
+            # DATA PREP
+            # -----------------------------
+            df["profit"] = df["revenue"] - df["expenses"]
+            df["margin"] = (df["profit"] / df["revenue"]) * 100
+
             st.markdown(
                 """
                 <div class="card">
@@ -184,55 +159,80 @@ with right:
                 """,
                 unsafe_allow_html=True
             )
-
             st.dataframe(df, use_container_width=True)
 
             if st.button("🚀 Run AI Analysis"):
                 if not GEMINI_API_KEY:
-                    st.error("Gemini API key is missing.")
+                    st.error("Gemini API key missing.")
                 else:
-                    with st.spinner("Analyzing business performance…"):
-                        # FULL ANALYSIS
+                    with st.spinner("Analyzing business…"):
                         full_insights = analyze_data(
                             df=df,
                             api_key=GEMINI_API_KEY,
                             model_name=selected_model
                         )
 
-                        # EXECUTIVE SUMMARY (SEPARATE CALL – FIXED)
+                        # -----------------------------
+                        # EXECUTIVE SUMMARY
+                        # -----------------------------
                         summary_prompt = f"""
-You are a senior business consultant.
-
-From the analysis below, extract EXACTLY 5 bullet points:
-- Each bullet = one clear business insight
-- Focus on money, risk, or efficiency
-- No headings
-- No paragraphs
-- Only bullet points
+Extract EXACTLY 5 bullets for an executive summary.
+Focus on profit, cost, efficiency, and risk.
 
 Analysis:
 {full_insights}
 """
-
                         executive_summary = analyze_data(
                             df=df,
                             api_key=GEMINI_API_KEY,
                             model_name=selected_model
                         )
 
-                    # EXEC SUMMARY
+                    # -----------------------------
+                    # EXEC SUMMARY UI
+                    # -----------------------------
                     st.markdown(
                         """
                         <div class="card">
                             <h2>🧠 Executive Summary</h2>
-                            <p class="muted">Key insights you should act on immediately</p>
+                            <p class="muted">Top insights you should act on</p>
                         </div>
                         """,
                         unsafe_allow_html=True
                     )
                     st.markdown(executive_summary)
 
+                    # -----------------------------
+                    # VISUAL INSIGHTS (NEW)
+                    # -----------------------------
+                    st.markdown(
+                        """
+                        <div class="card">
+                            <h2>📊 Visual Insights</h2>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+                    c1, c2 = st.columns(2)
+
+                    with c1:
+                        st.subheader("Profit by Client")
+                        profit_df = df[["client", "profit"]].set_index("client")
+                        st.bar_chart(profit_df)
+
+                    with c2:
+                        st.subheader("Hours vs Revenue")
+                        scatter_df = df[["hours_worked", "revenue"]]
+                        st.scatter_chart(scatter_df)
+
+                    st.subheader("Expenses vs Revenue")
+                    expense_df = df[["expenses", "revenue"]]
+                    st.scatter_chart(expense_df)
+
+                    # -----------------------------
                     # DETAILED ANALYSIS
+                    # -----------------------------
                     st.markdown(
                         """
                         <div class="card">
